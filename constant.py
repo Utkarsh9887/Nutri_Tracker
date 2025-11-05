@@ -3,7 +3,7 @@ COLORS = {
     'primary': '#4CAF50',       # Green
     'secondary': '#2196F3',     # Blue
     'accent': '#FF9800',        # Orange
-    'background': "#0A0A0A",    # Light gray
+    'background': "#080808",    # Light gray
     'text': "#FEFAFA",          # Dark gray
     'success': '#4CAF50',
     'warning': '#FFC107',
@@ -11,8 +11,8 @@ COLORS = {
 }
 
 # USDA default config
-USDA_API_KEY = "rqrDylfBJxVKWXnXgb7BGhShKaRsE2sqiMeME78b"
-USDA_BASE_URL = "https://api.nal.usda.gov/fdc/v1"
+USDA_API_KEY = "384923ff68e4e7d5373aa86623c4ac2a"
+USDA_BASE_URL = "https://world.openfoodfacts.org/cgi/search.pl"
 
 # Password hashing config
 PWD_HASH_ITERATIONS = 150_000

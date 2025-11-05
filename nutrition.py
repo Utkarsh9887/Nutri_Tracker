@@ -66,21 +66,21 @@ def log_food(conn, user_id: Optional[int], food_name: str, quantity: float, date
             n = FOOD_DATABASE[key]
             ratio = quantity / 100.0
             nutrition_info = {
-                "calories": n["calories"] * ratio,
-                "carbs": n["carbs"] * ratio,
-                "protein": n["protein"] * ratio,
-                "fat": n["fat"] * ratio,
-                "fiber": n.get("fiber", 0) * ratio
+                "calories":n["calories"] * ratio,
+                "carbs":n["carbs"] * ratio,
+                "protein":n["protein"] * ratio,
+                "fat":n["fat"] * ratio,
+                "fiber":n.get("fiber", 0) * ratio
             }
         else:
             # Use conservative estimate but mark as estimated
             ratio = quantity / 100.0
             nutrition_info = {
-                "calories": 100 * ratio,
-                "carbs": 20 * ratio,
-                "protein": 5 * ratio,
-                "fat": 3 * ratio,
-                "fiber": 2 * ratio
+                "calories":100 * ratio,
+                "carbs":20 * ratio,
+                "protein":5 * ratio,
+                "fat":3 * ratio,
+                "fiber":2 * ratio
             }
             estimated = True
             warn(f"No USDA or local data for '{food_name}', inserting estimated values.")

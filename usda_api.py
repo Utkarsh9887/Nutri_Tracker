@@ -1,131 +1,110 @@
-# usda_api.py
+# usda_api.py — Combined free nutrition API (Open Food Facts + Nutritionix)
 import requests
 from typing import Optional, Dict, Any
-from constant import USDA_BASE_URL, USDA_API_KEY
-from utils import warn, info
+from utils import warn
 
+# --------------------------------------------------------------------
+#  PRIMARY:  Open Food Facts  (no key, open-source)
+# --------------------------------------------------------------------
+class OpenFoodFactsAPI:
+    BASE_URL = "https://world.openfoodfacts.org/cgi/search.pl"
+
+    def get_nutrition_for_food(self, food_name: str, quantity: float = 100.0) -> Optional[Dict[str, Any]]:
+        try:
+            params = {
+                "search_terms": food_name,
+                "search_simple": 1,
+                "action": "process",
+                "json": 1,
+                "page_size": 1,
+            }
+            r = requests.get(self.BASE_URL, params=params, timeout=10)
+            r.raise_for_status()
+            data = r.json()
+            if not data.get("products"):
+                return None
+
+            nutriments = data["products"][0].get("nutriments", {})
+            per_100g = {
+                "calories": nutriments.get(f"energy-kcal_100g", 0.0),
+                "carbs": nutriments.get(f"carbohydrates_100g", 0.0),
+                "protein": nutriments.get(f"proteins_100g", 0.0),
+                "fat": nutriments.get(f"fat_100g", 0.0),
+                "fiber": nutriments.get(f"fiber_100g", 0.0),
+            }
+            print(per_100g)
+            # scale to the exact quantity
+            ratio = quantity / 100.0
+            scaled = {k: round(v * ratio, 2) for k, v in per_100g.items()}
+
+            return scaled
+        except requests.RequestException as e:
+            warn(f"Open Food Facts error: {e}")
+            return None
+
+
+# --------------------------------------------------------------------
+#  BACKUP:  Nutritionix  (free personal API key)
+# --------------------------------------------------------------------
+class NutritionixAPI:
+    BASE_URL = "https://trackapi.nutritionix.com/v2/natural/nutrients"
+
+    def __init__(self, app_id: str = "", app_key: str = ""):
+        self.app_id = "7bcaef13"
+        self.app_key = "384923ff68e4e7d5373aa86623c4ac2a"
+
+    def get_nutrition_for_food(self, food_name: str, quantity: float = 100.0) -> Optional[Dict[str, Any]]:
+        try:
+            headers = {
+                "x-app-id": self.app_id,
+                "x-app-key": self.app_key,
+                "Content-Type": "application/json",
+            }
+            data = {"query": f"100g {food_name}"}
+            r = requests.post(self.BASE_URL, json=data, headers=headers, timeout=10)
+            r.raise_for_status()
+            result = r.json()
+            if not result.get("foods"):
+                return None
+
+            item = result["foods"][0]
+            return {
+                "calories": item.get("nf_calories", 0.0),
+                "carbs": item.get("nf_total_carbohydrate", 0.0),
+                "protein": item.get("nf_protein", 0.0),
+                "fat": item.get("nf_total_fat", 0.0),
+                "fiber": item.get("nf_dietary_fiber", 0.0),
+            }
+        except requests.RequestException as e:
+            warn(f"Nutritionix error: {e}")
+            return None
+
+
+# --------------------------------------------------------------------
+#  UNIFIED WRAPPER (keeps same class name used by your project)
+# --------------------------------------------------------------------
 class USDANutritionAPI:
-    def __init__(self, api_key: str = USDA_API_KEY):
-        self.api_key = api_key
-        self.base_url = USDA_BASE_URL
-        self.session = requests.Session()
-        self.session.headers.update({"Content-Type": "application/json"})
-        self.cache = {}
+    """
+    Unified nutrition API that first tries Open Food Facts (no key),
+    then falls back to Nutritionix if necessary.
+    Returns nutrients per 100 g to match nutrition.py scaling.
+    """
 
-    def search_foods(self, query: str, page_size: int = 10) -> Optional[Dict[str, Any]]:
-        url = f"{self.base_url}/foods/search"
-        params = {
-            "api_key": self.api_key,
-            "query": query,
-            "pageSize": page_size,
-            "dataType": ["Survey (FNDDS)", "Branded", "Foundation", "SR Legacy"]
-        }
-        try:
-            r = self.session.get(url, params=params, timeout=10)
-            r.raise_for_status()
-            return r.json()
-        except requests.RequestException as e:
-            warn(f"USDA search error: {e}")
-            return None
+    def __init__(self, app_id: str = "", app_key: str = ""):
+        self.primary = OpenFoodFactsAPI()
+        self.backup = NutritionixAPI(app_id, app_key)
 
-    def get_food_details(self, fdc_id: int) -> Optional[Dict[str, Any]]:
-        url = f"{self.base_url}/food/{fdc_id}"
-        params = {"api_key": self.api_key}
-        try:
-            r = self.session.get(url, params=params, timeout=10)
-            r.raise_for_status()
-            return r.json()
-        except requests.RequestException as e:
-            warn(f"USDA details error: {e}")
-            return None
+    def get_nutrition_for_food(self, food_name: str, quantity: float = 100.0) -> Optional[Dict[str, Any]]:
+        # 1️⃣ Try Open Food Facts
+        info = self.primary.get_nutrition_for_food(food_name, quantity)
+        if info and info["calories"] > 0:
+            return info
 
-    def _extract_nutrient_id(self, nutrient_entry: dict):
-        """
-        USDA responses vary: sometimes nutrient info appears nested under 'nutrient' with 'number' or 'id',
-        sometimes there is 'nutrientId' at top level. We'll check several fields.
-        """
-        # common patterns
-        nutrient = nutrient_entry.get('nutrient') or {}
-        candidates = [
-            nutrient.get('number'),
-            nutrient.get('id'),
-            nutrient_entry.get('nutrientId'),
-            nutrient_entry.get('number'),
-            nutrient_entry.get('nutrient_number')
-        ]
-        for c in candidates:
-            if c is None:
-                continue
-            try:
-                return int(c)
-            except Exception:
-                try:
-                    return int(str(c))
-                except:
-                    continue
-        return None
+        # 2️⃣ Fallback → Nutritionix
+        warn(f"Open Food Facts data missing for '{food_name}', using Nutritionix.")
+        info = self.backup.get_nutrition_for_food(food_name, quantity)
+        return info
 
-    def _extract_amount(self, nutrient_entry: dict):
-        # field names used sometimes: 'amount', 'value', 'nutrientAmount', 'nutrientValue'
-        for key in ('amount', 'value', 'nutrient_amount', 'nutrientValue'):
-            if key in nutrient_entry and nutrient_entry[key] is not None:
-                return float(nutrient_entry[key])
-        # maybe under nested 'nutrient' ?
-        nutrient = nutrient_entry.get('nutrient') or {}
-        for key in ('amount', 'value'):
-            if key in nutrient and nutrient[key] is not None:
-                return float(nutrient[key])
-        return 0.0
-
-    def extract_nutrition_info(self, food_data: dict) -> dict:
-        """
-        Return a dict: calories, carbs, protein, fat, fiber. Values per 100g (or per serving depending on USDA record).
-        We attempt to find the nutrient numbers typically used in FDC:
-          - Energy: nutrient number 208 (kcal) or legacy 1008 (some older scripts used different codes)
-          - Carbohydrate: 205 (g) or 1005
-          - Protein: 203 (g) or 1003
-          - Total lipid (fat): 204 (g) or 1004
-          - Fiber: 291 (g) or 1079
-        """
-        # mapping covers both legacy and FDC nutrient numbers
-        nutrient_map = {
-            208: "calories", 1008: "calories",
-            205: "carbs", 1005: "carbs",
-            203: "protein", 1003: "protein",
-            204: "fat", 1004: "fat",
-            291: "fiber", 1079: "fiber"
-        }
-        nutrition_info = {"calories": 0.0, "carbs": 0.0, "protein": 0.0, "fat": 0.0, "fiber": 0.0}
-        if not food_data:
-            return nutrition_info
-        nutrients = food_data.get('foodNutrients') or food_data.get('foodNutrients', [])
-        for n in nutrients:
-            nid = self._extract_nutrient_id(n)
-            if nid is None:
-                continue
-            amt = self._extract_amount(n)
-            if nid in nutrient_map:
-                nutrition_info[nutrient_map[nid]] = amt
-        return nutrition_info
-
-    def get_nutrition_for_food(self, food_name: str, quantity: float = 100.0):
-        cache_key = f"{food_name.lower()}_{quantity}"
-        if cache_key in self.cache:
-            return self.cache[cache_key]
-
-        # search
-        search = self.search_foods(food_name)
-        if not search or 'foods' not in search or not search['foods']:
-            return None
-        first = search['foods'][0]
-        fdc_id = first.get('fdcId') or first.get('fdc_id') or None
-        if not fdc_id:
-            return None
-        details = self.get_food_details(fdc_id)
-        if not details:
-            return None
-        nutrition = self.extract_nutrition_info(details)
-        ratio = quantity / 100.0
-        adjusted = {k: v * ratio for k, v in nutrition.items()}
-        self.cache[cache_key] = adjusted
-        return adjusted
+# Example usage:
+api = USDANutritionAPI()
+print(api.get_nutrition_for_food("apple",200))

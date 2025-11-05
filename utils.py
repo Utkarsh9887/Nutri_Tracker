@@ -3,13 +3,14 @@ import os
 import hashlib
 import binascii
 from datetime import datetime
+from typing import Union
 
 from constant import PWD_HASH_ITERATIONS, PWD_HASH_NAME, PWD_SALT_BYTES
 
 def generate_salt():
     return os.urandom(PWD_SALT_BYTES)
 
-def hash_password(password: str, salt: bytes):
+def hash_password(password: Union[str, bytes], salt: bytes):
     """
     Return hex-encoded hash for storage and hex-encoded salt.
     Uses PBKDF2-HMAC with SHA-256.
@@ -46,3 +47,5 @@ def warn(msg):
 
 def info(msg):
     print(f"[INFO] {msg}")
+    
+

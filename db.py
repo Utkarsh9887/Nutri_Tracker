@@ -45,6 +45,14 @@ def connect_to_db(db_file: str = DB_FILE) -> Connection:
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users (id)
     )''')
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS water_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            date TEXT,
+            glasses INTEGER DEFAULT 0,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )""")
 
     conn.commit()
     return conn
@@ -107,6 +115,7 @@ def get_user_data_for_ml(conn: Connection, user_id: int):
 # Food logs
 def log_food_db(conn: Connection, user_id: int, food_name: str, quantity: float, carbs, calories, protein, fat, fiber, date, meal_type):
     cursor = conn.cursor()
+    print("DEBUG insert values:", carbs, calories, protein, fat, fiber)
     cursor.execute(
         "INSERT INTO food_logs (user_id, food_name, quantity, carbs, calories, protein, fat, fiber, date, meal_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (user_id, food_name, quantity, carbs, calories, protein, fat, fiber, date, meal_type)
@@ -229,5 +238,44 @@ def predict_calorie_goal(conn, user_id: int) -> int:
         calories += 500  # surplus
 
     return int(calories)
+def get_user_streak(conn, user_id: int) -> int:
+    """Calculate consecutive logging streak for a user."""
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT DISTINCT date
+        FROM food_logs
+        WHERE user_id = ?
+        ORDER BY date DESC
+    """, (user_id,))
+    dates = [row[0] for row in cur.fetchall()]
+    if not dates:
+        return 0
+
+    streak = 1
+    prev = pd.to_datetime(dates[0]).date()
+    for d in dates[1:]:
+        curr = pd.to_datetime(d).date()
+        if (prev - curr).days == 1:
+            streak += 1
+            prev = curr
+        else:
+            break
+    return streak
+def get_today_water(conn, user_id: int) -> int:
+    cur = conn.cursor()
+    cur.execute("SELECT glasses FROM water_logs WHERE user_id=? AND date=date('now')", (user_id,))
+    row = cur.fetchone()
+    return row[0] if row else 0
+
+
+def update_water(conn, user_id: int, glasses: int):
+    cur = conn.cursor()
+    cur.execute("SELECT id FROM water_logs WHERE user_id=? AND date=date('now')", (user_id,))
+    row = cur.fetchone()
+    if row:
+        cur.execute("UPDATE water_logs SET glasses=? WHERE id=?", (glasses, row[0]))
+    else:
+        cur.execute("INSERT INTO water_logs (user_id, date, glasses) VALUES (?, date('now'), ?)", (user_id, glasses))
+    conn.commit()
 
 
