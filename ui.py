@@ -6,9 +6,10 @@ import matplotlib.pyplot as plt
 from datetime import date
 import logging
 import random
+from food_search import search_foods
 
 # Project modules (must exist in your project)
-from constant import COLORS, USDA_API_KEY
+from constant import COLORS
 from db import (
     connect_to_db, login_user, create_user, update_user_profile, view_past_logs,
     fetch_past_logs_for_plot, get_user_data_for_ml, predict_calorie_goal,
@@ -37,7 +38,7 @@ class ModernNutritionTracker:
         self.root.geometry("1000x700")
         # DB / services
         self.conn = connect_to_db()
-        self.usda_api = USDANutritionAPI(USDA_API_KEY)
+        self.usda_api = USDANutritionAPI()
 
         # session
         self.current_user_id = None
@@ -368,6 +369,27 @@ class ModernNutritionTracker:
         ttk.Label(form, text="Food Name:").grid(row=0, column=0, sticky=tk.W, pady=5)
         food_entry = ttk.Entry(form, width=30)
         food_entry.grid(row=0, column=1, padx=10, pady=5)
+        
+        '''# ---- Food search suggestions ----
+        suggestion_box = tk.Listbox(form, width=30, height=5, font=("Segoe UI", 9))
+        suggestion_box.grid(row=1, column=1, padx=10, pady=2, sticky="w")
+        def update_suggestions(event=None):
+            query = food_entry.get()
+            suggestion_box.delete(0, tk.END)
+            if not query:
+                return
+            suggestions = search_foods(query)
+            for s in suggestions:
+                suggestion_box.insert(tk.END, s)
+        def select_suggestion(event=None):
+            selection = suggestion_box.get(tk.ANCHOR)
+            if selection:
+                food_entry.delete(0, tk.END)
+                food_entry.insert(0, selection)
+                suggestion_box.delete(0, tk.END)
+        # Bind typing + selection
+        food_entry.bind("<KeyRelease>", update_suggestions)
+        suggestion_box.bind("<Double-Button-1>", select_suggestion)'''
 
         ttk.Label(form, text="Quantity (grams):").grid(row=1, column=0, sticky=tk.W, pady=5)
         qty_entry = ttk.Entry(form, width=30)
@@ -389,7 +411,6 @@ class ModernNutritionTracker:
                 qty = qty_entry.get().strip()
                 meal = meal_var.get().strip()
                 date_val = date_entry.get().strip()
-
                 if not food or not qty or not meal:
                     self.show_message("Error", "All fields are required.", "error")
                     return

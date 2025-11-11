@@ -1,0 +1,52 @@
+name,calories,carbs,protein,fat,fiber
+apple,52,14,0.3,0.2,2.4
+banana,89,23,1.1,0.3,2.6
+orange,47,12,0.9,0.1,2.4
+grapes,69,18,0.7,0.2,0.9
+watermelon,30,8,0.6,0.2,0.4
+pineapple,50,13,0.5,0.1,1.4
+mango,60,15,0.8,0.4,1.6
+strawberry,33,8,0.7,0.3,2
+blueberry,57,14,0.7,0.3,2.4
+avocado,160,9,2,15,7
+tomato,18,3.9,0.9,0.2,1.2
+potato,77,17,2,0.1,2.2
+sweet potato,86,20,1.6,0.1,3
+carrot,41,10,0.9,0.2,2.8
+broccoli,34,7,2.8,0.4,2.6
+spinach,23,3.6,2.9,0.4,2.2
+cucumber,16,3.6,0.7,0.1,0.5
+onion,40,9,1.1,0.1,1.7
+garlic,149,33,6.4,0.5,2.1
+peas,81,14,5,0.4,5
+rice,130,28,2.7,0.3,0.4
+brown rice,112,23,2.6,0.9,1.8
+oatmeal,68,12,2.4,1.4,1.7
+bread (white),66,13,2.2,0.8,0.6
+bread (whole wheat),69,13,3.6,0.9,1.9
+pasta,131,25,5,1.1,1.8
+pizza,266,33,11,10,2.3
+chicken breast,165,0,31,3.6,0
+chicken curry,210,6,20,11,1
+beef steak,271,0,25,19,0
+egg,78,0.6,6,5,0
+milk (whole),42,5,3.4,1,0
+yogurt (plain),61,6,3.5,1.5,0
+cheese (cheddar),403,1.3,25,33,0
+butter,717,0.1,0.9,81,0
+paneer,265,1.2,18,20,0
+lentils,116,20,9,0.4,7.9
+chickpeas,139,27,7.1,2.6,7.1
+peanuts,567,16,25,49,8
+almonds,579,22,21,50,12
+walnuts,654,14,15,65,7
+cashews,553,30,18,44,3
+olive oil,119,0,0,14,0
+buttermilk,40,4.8,3.3,1,0
+fish (salmon),208,0,20,13,0
+mutton,294,0,25,21,0
+tea (with milk sugar),49,9,1,1,0
+coffee (with milk sugar),45,8,1,1,0
+cola,41,10,0,0,0
+chocolate,152,16,2.2,9,1.6
+ice cream,207,24,3.5,11,0.7

@@ -2,7 +2,6 @@
 from db import log_food_db, view_past_logs, fetch_past_logs_for_plot
 from usda_api import USDANutritionAPI
 from typing import Tuple, Dict, Any
-from constant import USDA_API_KEY
 from utils import parse_date, warn
 import pandas as pd
 from typing import Optional, Tuple

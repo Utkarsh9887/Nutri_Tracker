@@ -277,5 +277,13 @@ def update_water(conn, user_id: int, glasses: int):
     else:
         cur.execute("INSERT INTO water_logs (user_id, date, glasses) VALUES (?, date('now'), ?)", (user_id, glasses))
     conn.commit()
-
-
+def add_food(name, calories, carbs, protein, fat, fiber):
+    conn = sqlite3.connect("nutrition_local.db")
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO foods (name, calories, carbs, protein, fat, fiber) VALUES (?, ?, ?, ?, ?, ?)",
+        (name.lower(), calories, carbs, protein, fat, fiber)
+    )
+    conn.commit()
+    conn.close()
+    print(f"✅ Added '{name}' to local database.")
