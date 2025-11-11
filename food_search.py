@@ -22,3 +22,4 @@ def search_foods(keyword: str, limit: int = 8):
     scored = [(food_name, fuzz.partial_ratio(keyword, food_name.lower())) for food_name in all_foods]
     scored.sort(key=lambda x: x[1], reverse=True)
     return [food_name for food_name, score in scored[:limit] if score > 50]
+#this file is not been used now
