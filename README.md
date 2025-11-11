@@ -143,8 +143,8 @@ To use the API:
 
 ## 🧑‍💻 Contributors
 
-- **Developer:** Utkarsh Verma  
-- **Language:** Python  
+- **Developer:** Utkarsh Verma, Saksham Kannojiya, Vaibhav Bhandari
+- **Language:** Python
 - **Tools Used:** Tkinter, Pandas, Requests, SQLite
 
 ---
